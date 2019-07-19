@@ -37,11 +37,11 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 			foreach ($galleys as $galley) {
 				$galleyURN = $galley->getStoredPubId('other::urn');
 				if ($galleyURN) {
-					$galleyViewURL = Request::url($journal->getPath(), 'article', 'view', array($article->getBestArticleId($journal), $galley->getBestGalleyId($journal)));
+					$articleURL = Request::url($journal->getPath(), 'article', 'view', array($article->getBestArticleId($journal)));
 					$galleyDownloadURL = Request::url($journal->getPath(), 'article', 'download', array($article->getBestArticleId($journal), $galley->getBestGalleyId($journal)));
 					$identifiers[] = array(
 						'urn' => $galleyURN,
-						'viewURL' => $galleyViewURL,
+						'viewURL' => $articleURL,
 						'downloadURL' => $galleyDownloadURL
 					);
 				}
