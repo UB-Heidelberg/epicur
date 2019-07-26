@@ -28,7 +28,7 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 		$pubIdPlugins = PluginRegistry::loadCategory('pubIds', true, $journal->getId());
 		$urnPlugin = $pubIdPlugins['urnpubidplugin'];
 		if ($urnPlugin) {
-			$urnScheme = $urnPlugin->getSetting($journal->getId(), 'namespace');
+			$urnScheme = $urnPlugin->getSetting($journal->getId(), 'urnNamespace');
 
 			$galleysIdentifiers = array();
 			// filter PDF and EPUB full text galleys -- DNB concerns only PDF and EPUB formats
@@ -42,7 +42,8 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 					$identifiers[] = array(
 						'urn' => $galleyURN,
 						'viewURL' => $articleURL,
-						'downloadURL' => $galleyDownloadURL
+						'downloadURL' => $galleyDownloadURL,
+						'type' => $galley->getFileType(),
 					);
 				}
 			}
@@ -70,19 +71,19 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 	 */
 	function formatIdentifier($urnScheme, $values) {
 		$response = '';
-		$tab = "\t\t";
+		$tab = "\t\t\t";
 
 		foreach ($values as $value) {
- 			$response .= $tab. "\t<record>\n<identifier scheme=\"" .$urnScheme ."\">" .$value['urn'] ."</identifier>\n" .
-				$tab ."\t<resource>\n" .
-				$tab ."\t\t<identifier scheme=\"url\" type=\"frontpage\" role=\"primary\">" .$value['viewURL'] ."</identifier>\n" .
-				$tab ."\t\t<format scheme=\"imt\">text/html</format>\n" .
-				$tab ."\t</resource>\n" .
+ 			$response .= $tab. "<record>\n<identifier scheme=\"$urnScheme\">$value[urn]</identifier>\n" .
+				$tab ."<resource>\n" .
+				$tab ."\t<identifier scheme=\"url\" type=\"frontpage\" role=\"primary\">$value[viewURL]</identifier>\n" .
+				$tab ."\t<format scheme=\"imt\">text/html</format>\n" .
+				$tab ."</resource>\n" .
 
-				$tab ."\t<resource>\n" .
-				$tab ."\t\t<identifier scheme=\"url\">" .$value['downloadURL'] ."</identifier>\n" .
-				$tab ."\t\t<format scheme=\"imt\">application/pdf</format>\n" .
-				$tab ."\t</resource>\n</record>\n";
+				$tab ."<resource>\n" .
+				$tab ."\t<identifier scheme=\"url\">$value[downloadURL]</identifier>\n" .
+				$tab ."\t<format scheme=\"imt\">$value[type]</format>\n" .
+				$tab ."</resource>\n</record>\n";
 		}
 
 		return $response;
@@ -94,6 +95,7 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 	 * @return boolean
 	 */
 	function filterGalleys($galley) {
+		$allowedFileTypes = ['application/epub+zip', 'text/html'];
 		// check if it is a full text
 		$genreDao = DAORegistry::getDAO('GenreDAO');
 		$galleyFile = $galley->getFile();
@@ -103,7 +105,7 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 			if ($genre->getCategory() != 1 || $genre->getSupplementary() || $genre->getDependent()) {
 				return false;
 			}
-			return $galley->isPdfGalley() ||  $galley->getFileType() == 'application/epub+zip';
+			return $galley->isPdfGalley() || in_array($galley->getFileType(), $allowedFileTypes) ;
 		}
 		return false;
 	}
