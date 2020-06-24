@@ -59,7 +59,7 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 			"\t\t\t\t<update_status type=\"urn_new\"></update_status>\n" .
 			"\t\t\t</delivery>\n" .
 			"\t\t</administrative_data>\n" .
-			(!empty($identifiers) ? $this->formatIdentifier($urnScheme, $identifiers) : "") .
+			(!empty($identifiers) ? $this->formatIdentifier($urnScheme, $identifiers) : "<record>\n\t\t\t<identifier scheme=\"urn:nbn\"/>\n\t\t</record>") .
 			"</epicur>\n";
 		return $response;
 	}
