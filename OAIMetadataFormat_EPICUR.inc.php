@@ -14,14 +14,15 @@
  */
 
 class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
+
+
 	/**
 	 * @see OAIMetadataFormat#toXml
 	 */
-	function toXml(&$record, $format = null) {
+	function toXml($record, $format = null) {
+		$request = Application::get()->getRequest();
 		$article = $record->getData('article');
-		$issue = $record->getData('issue');
 		$journal = $record->getData('journal');
-		$section = $record->getData('section');
 		$galleys = $record->getData('galleys');
 
 		$identifiers = array();
@@ -30,15 +31,14 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 		if ($urnPlugin) {
 			$urnScheme = $urnPlugin->getSetting($journal->getId(), 'urnNamespace');
 
-			$galleysIdentifiers = array();
 			// filter PDF and EPUB full text galleys -- DNB concerns only PDF and EPUB formats
 			$filteredGalleys = array_filter($galleys, array($this, 'filterGalleys'));
 			$galleys = $filteredGalleys;
 			foreach ($galleys as $galley) {
 				$galleyURN = $galley->getStoredPubId('other::urn');
 				if ($galleyURN) {
-					$articleURL = Request::url($journal->getPath(), 'article', 'view', array($article->getBestArticleId($journal)));
-					$galleyDownloadURL = Request::url($journal->getPath(), 'article', 'download', array($article->getBestArticleId($journal), $galley->getBestGalleyId($journal)));
+					$articleURL = $request->url($journal->getPath(), 'article', 'view', array($article->getBestArticleId($journal)));
+					$galleyDownloadURL = $request->url($journal->getPath(), 'article', 'download', array($article->getBestArticleId($journal), $galley->getBestGalleyId($journal)));
 					$identifiers[] = array(
 						'urn' => $galleyURN,
 						'viewURL' => $articleURL,
@@ -48,7 +48,7 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 				}
 			}
 		}
-		$response = "<epicur\n" .
+		return "<epicur\n" .
 			"\txmlns=\"urn:nbn:de:1111-2004033116\"\n" .
 			"\txmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" .
 		 	"\txsi:schemaLocation=\"urn:nbn:de:1111-2004033116\n" .
@@ -61,15 +61,15 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 			"\t\t</administrative_data>\n" .
 			(!empty($identifiers) ? $this->formatIdentifier($urnScheme, $identifiers) : "<record>\n\t\t\t<identifier scheme=\"urn:nbn\"/>\n\t\t</record>") .
 			"</epicur>\n";
-		return $response;
 	}
 
 	/**
 	 * Format XML for single identifier and resource element.
 	 * @param $urnScheme string
 	 * @param $values array
+	 * @return string
 	 */
-	function formatIdentifier($urnScheme, $values) {
+	function formatIdentifier(string $urnScheme, array $values) {
 		$response = '';
 		$tab = "\t\t\t";
 
@@ -94,10 +94,11 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 	 * @param $galley ArticleGalley
 	 * @return boolean
 	 */
-	function filterGalleys($galley) {
+	function filterGalleys(ArticleGalley $galley) {
+		/** @var GenreDAO $genreDao */
+		$genreDao = DAORegistry::getDAO('GenreDAO');
 		$allowedFileTypes = ['application/epub+zip', 'text/html'];
 		// check if it is a full text
-		$genreDao = DAORegistry::getDAO('GenreDAO');
 		$galleyFile = $galley->getFile();
 		if ($galleyFile) {
 			$genre = $genreDao->getById($galleyFile->getGenreId());
