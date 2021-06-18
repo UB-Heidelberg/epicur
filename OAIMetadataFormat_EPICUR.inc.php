@@ -15,7 +15,6 @@
 
 class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 
-
 	/**
 	 * @see OAIMetadataFormat#toXml
 	 */
@@ -26,8 +25,12 @@ class OAIMetadataFormat_EPICUR extends OAIMetadataFormat {
 		$galleys = $record->getData('galleys');
 
 		$identifiers = array();
-		$pubIdPlugins = PluginRegistry::loadCategory('pubIds', true, $journal->getId());
-		$urnPlugin = $pubIdPlugins['urnpubidplugin'];
+		$pubIdPlugins = PluginRegistry::getPlugins('pubIds');
+		// First check if URNPubIdPlugin is already loaded
+		if (!$urnPlugin = $pubIdPlugins['urnpubidplugin']) {
+			$pubIdPlugins = PluginRegistry::loadCategory('pubIds');
+			$urnPlugin = $pubIdPlugins['urnpubidplugin'];
+		}
 		if ($urnPlugin) {
 			$urnScheme = $urnPlugin->getSetting($journal->getId(), 'urnNamespace');
 
